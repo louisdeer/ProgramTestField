@@ -119,7 +119,6 @@ public class Eval {
 						// calculate possibility for this particular outcome, knowing previous state.
 						double p = s_next.rollProb(x, y, z);
 						//simulate roll
-						//something isn't right here
 						s_next.roll(x, y, z);
 						// YOUR CODE SHOULD CALL "value_rolled_hand" AT SOME POINT.
 						val += p * value_rolled_hand(s_next, depth);
@@ -268,8 +267,11 @@ public class Eval {
 		double gauge = (double) (s.comp_brains_eaten + s.brains_collected) / ((double)(State.brains_to_win));
 		gauge = Math.min(gauge, State.win_payoff);
 		double predicted_win_rate = gauge + gap;
-		value = Math.min(predicted_win_rate, State.win_payoff);
-		value = Math.max(predicted_win_rate, -1 * State.win_payoff);
+		// range
+		predicted_win_rate = Math.min(predicted_win_rate, State.win_payoff);
+		predicted_win_rate = Math.max(predicted_win_rate, -1 * State.win_payoff);
+		//
+		value = predicted_win_rate;
 		// Return the resulting heuristic value ...
 		return (value);
     }
