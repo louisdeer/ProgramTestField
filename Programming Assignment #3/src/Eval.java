@@ -115,13 +115,14 @@ public class Eval {
 						continue;
 					} else {
 						//new state
-						State s_next = new State(s);
+						//State s_next = new State(s);
 						// calculate possibility for this particular outcome, knowing previous state.
-						double p = s_next.rollProb(x, y, z);
+						double p = s.rollProb(x, y, z);
+						
 						//simulate roll
-						s_next.roll(x, y, z);
+						s.roll(x, y, z);
 						// YOUR CODE SHOULD CALL "value_rolled_hand" AT SOME POINT.
-						val += p * value_rolled_hand(s_next, depth);
+						val += p * value_rolled_hand(s, depth);
 					}
 				}
 			}
@@ -263,14 +264,32 @@ public class Eval {
 		// MINUS "State.win_payoff".  THIS FUNCTION SHOULD BE FAST.
 	
 		// win chance as proportional to leading brains over brains to win
-		double gap = ((double)(s.comp_brains_eaten + s.brains_collected - s.user_brains_eaten)) / ((double)(s.user_brains_eaten + 1));
-		double gauge = (double) (s.comp_brains_eaten + s.brains_collected) / ((double)(State.brains_to_win));
-		gauge = Math.min(gauge, State.win_payoff);
-		double predicted_win_rate = gauge + gap;
-		// range
-		predicted_win_rate = Math.min(predicted_win_rate, State.win_payoff);
-		predicted_win_rate = Math.max(predicted_win_rate, -1 * State.win_payoff);
-		//
+		
+		// useful information
+		double hypothetic_value_of_brains = (double) (s.comp_brains_eaten + s.brains_collected);
+		double diff_compvsuser = hypothetic_value_of_brains - (double)(s.user_brains_eaten);
+		double how_far_is_the_game = hypothetic_value_of_brains + (double)(s.user_brains_eaten);
+		
+		// analyzer
+		// gap analyze how well the computer do comparing to how well the user do
+		// this value never exceeding 100%
+		double rate_by_gap = diff_compvsuser / ((double)(how_far_is_the_game));
+		
+		// gauge analyze the ratio of absolute value vs brains_to_win
+		// if the computer has thirteen or more brains, it will exceeding 100%
+		double rate_by_gauge = hypothetic_value_of_brains / ((double)(State.brains_to_win));
+		
+		// discounting factor
+		// gauge is only so useful if gap is relatively big
+		// so it can use a discounting factor for gauge
+		// vice versa
+		// predicting win rate using a simply plus of the said information
+		double predicted_win_rate = rate_by_gauge * Math.abs(rate_by_gap) + rate_by_gap;
+		
+		// range protection
+		value = Math.min(predicted_win_rate, State.win_payoff);
+		value = Math.max(predicted_win_rate, -1 * State.win_payoff);
+		// 
 		value = predicted_win_rate;
 		// Return the resulting heuristic value ...
 		return (value);
