@@ -17,12 +17,11 @@
 // David Noelle -- Sat Nov  3 16:37:10 PDT 2012
 //
 
-
 public class Eval {
 
     // Non-terminal states at this limit should be evaluated using
     // the given heuristic evaluation function ...
-    static public int depth_limit = 2;
+    static public int depth_limit = 3;
 
     // value -- This public function returns the payoff value of 
     //          terminal states or the expected utility value of 
@@ -265,34 +264,48 @@ public class Eval {
 	
 		// win chance as proportional to leading brains over brains to win
 		
-		// useful information
+		// considerably useful information
 		double hypothetic_value_of_brains = (double) (s.comp_brains_eaten + s.brains_collected);
 		double diff_compvsuser = hypothetic_value_of_brains - (double)(s.user_brains_eaten);
 		double how_far_is_the_game = hypothetic_value_of_brains + (double)(s.user_brains_eaten);
 		
-		// analyzer
+		// linear analyzer
 		// gap analyze how well the computer do comparing to how well the user do
 		// this value never exceeding 100%
 		double rate_by_gap = diff_compvsuser / ((double)(how_far_is_the_game));
 		
 		// gauge analyze the ratio of absolute value vs brains_to_win
-		// if the computer has thirteen or more brains, it will exceeding 100%
-		double rate_by_gauge = hypothetic_value_of_brains / ((double)(State.brains_to_win));
+		// if the computer has thirteen or more brains, it will start exceeding 100%
+		// this gauge is considered to be an optimistic estimation of win rate
+		double brain_gauge_comp = hypothetic_value_of_brains / ((double)(State.brains_to_win));
+		double brain_gauge_user = s.user_brains_eaten / ((double)(State.brains_to_win));
+		// pick the winner between the two
+		double leading_gauge = Math.max(brain_gauge_user, brain_gauge_comp);
 		
-		// discounting factor
-		// gauge is only so useful if gap is relatively big
-		// so it can use a discounting factor for gauge
-		// vice versa
-		// predicting win rate using a simply plus of the said information
-		double predicted_win_rate = rate_by_gauge * Math.abs(rate_by_gap) + rate_by_gap;
+		// this index interpret how solid is leader's position 
+		double leadership_index = leading_gauge * rate_by_gap;
+		
+		// predicted win rate, it's reasonably complicated.
+		double predicted_win_rate = modified_sigmoid_function(leadership_index) * State.win_payoff;
 		
 		// range protection
 		value = Math.min(predicted_win_rate, State.win_payoff);
 		value = Math.max(predicted_win_rate, -1 * State.win_payoff);
-		// 
-		value = predicted_win_rate;
+		
 		// Return the resulting heuristic value ...
 		return (value);
+    }
+    
+    
+    // this is a famous function that used for neuron network 
+    // it is smooth and differentiable
+    // it transform a linear value k into a statistical like value
+    // modified so the function return a value between -1 to 1 
+    // https://en.wikipedia.org/wiki/Sigmoid_function
+    static public double modified_sigmoid_function (double k) {
+    	double sigmoid_value = 1.0 / (1.0 + Math.exp(-1.0 * k));
+    	double modified_sigmoid_value = 2.0 * (sigmoid_value - 0.5);
+    	return modified_sigmoid_value;
     }
 
 }
