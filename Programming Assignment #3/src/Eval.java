@@ -21,7 +21,7 @@ public class Eval {
 
     // Non-terminal states at this limit should be evaluated using
     // the given heuristic evaluation function ...
-    static public int depth_limit = 3;
+    static public int depth_limit = 2;
 
     // value -- This public function returns the payoff value of 
     //          terminal states or the expected utility value of 
