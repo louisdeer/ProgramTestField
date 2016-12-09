@@ -204,42 +204,20 @@ public class Layer {
     public void computeOutputDelta() {
 
     	// PLACE YOUR CODE HERE ...
-    	
-    	// loop through upstream weight projection
-    	for (Projection in_weight_matrix : inputs) {
-    		// error vector has the same dimension of this layer, 1 by N
 
-    		Vector error = targ.difference(act);
-    		// upstream_input has the same dimension of this layer, 1 by N
-    		Vector upstream_netinput = in_weight_matrix.W.product(in_weight_matrix.input.act);
-    		// delta_raw has the dimension of N by N
-    		Matrix delta_raw = error.outerProduct(upstream_netinput);
-    		
-    		/*
-    		System.out.println("Error :  ");
-    		error.write(System.out);
-    		System.out.println(" ");
-    		System.out.println("Weight : ");
-    		in_weight_matrix.W.write(System.out);
-    		System.out.println(" ");
-    		System.out.println("upstream_netinput : ");
-    		upstream_netinput.write(System.out);
-    		System.out.println(" ");
-    		System.out.println("delta_raw : ");
-    		delta_raw.write(System.out);
-    		System.out.println(" ");
-    		*/
-    		
-    		
-    		// compute delta
-    		// recreate a 0 vector
-    		delta = new Vector (n);
-    		// adding column of outer product matrix
-    		for (int n = 0; n < delta_raw.cols; n++){
-    			delta = delta.sum(delta_raw.extractColumn(n));
-    			System.out.println(" ");
-    		}
-    	}
+		// compute delta
+		// recreate a 0 vector
+		delta = new Vector (n);
+    	
+		// error vector has the same dimension of output layer, 1 by N
+		Vector error = targ.difference(act);
+		
+		Vector partial_delta = new Vector (n);
+		// loop through neurons
+		for (int i = 0; i < n;i++) {
+			partial_delta.set(i, error.get(i) * net.derivative(min, max).get(i));
+		}
+		delta = delta.sum(partial_delta);
     }
 
     // computeHiddenDelta -- Calculate the unit delta values for this hidden
@@ -247,10 +225,28 @@ public class Layer {
     public void computeHiddenDelta() {
 
     	// PLACE YOUR CODE HERE ...
-    	// loop through upstream weight projection
-    		for (Projection out_weight_matrix : outputs) {
-	    		delta = out_weight_matrix.W.product(out_weight_matrix.output.delta);
+    	
+    	// compute delta
+		// recreate a 0 vector
+		delta = new Vector (n);
+		Vector partial_delta = new Vector (n);
+    	// loop through downstream projection
+		for (Projection out_projection : outputs) {
+    		//output layer dimension M_down 
+    		//input layer(this layer) dimension N
+			
+    		// downstream delta has the same dimension of downstream layer, 1 by N
+			// so does its derivative
+    		// the transposed weight projection has dimension of N * M_down
+    		Vector distributed_delta_from_downstream = out_projection.W.transpose().product(out_projection.output.delta);
+    		
+			for (int i = 0; i < n; i++) {
+				partial_delta.set(i, distributed_delta_from_downstream.get(i) * net.derivative(min, max).get(i));
     		}
+    		delta = delta.sum(partial_delta);
+		}
+    		
+		
     }
 
     // computeDelta -- Calculate the unit delta values for this layer.
